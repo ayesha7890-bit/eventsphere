@@ -1,5 +1,5 @@
 const express = require('express');
-const Expo = require('../models/Expo');
+const Expo = require('../models/expo');
 const { protect, allowRoles } = require('../middleware/auth');
 
 const router = express.Router();
