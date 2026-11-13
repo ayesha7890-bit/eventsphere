@@ -8,6 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/expos', require('./routes/expos'));
 
 app.get('/', (req, res) => {
   res.send('EventSphere API is running');
