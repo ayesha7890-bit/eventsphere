@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Expos from './expos';
+import Expos from './Expos';
 
 export default function Home() {
   const { user } = useAuth();

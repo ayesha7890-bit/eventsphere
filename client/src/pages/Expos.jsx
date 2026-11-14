@@ -1,4 +1,5 @@
-
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import api from '../api/api';
 
@@ -9,6 +10,7 @@ function formatDate(d) {
 }
 
 export default function Expos() {
+  const { user } = useAuth();
   const [expos, setExpos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -42,6 +44,15 @@ export default function Expos() {
             <div className="meta">{e.location}</div>
             <p className="desc">{e.description}</p>
             <span className={'badge badge-' + e.status}>{e.status}</span>
+            {user?.role === 'exhibitor' && e.status !== 'completed' && (
+  <Link
+    to={'/expos/' + e._id + '/apply'}
+    className="btn btn-red"
+    style={{ marginTop: 10, alignSelf: 'flex-start' }}
+  >
+    Apply as exhibitor
+  </Link>
+)}
           </article>
         ))}
       </div>
