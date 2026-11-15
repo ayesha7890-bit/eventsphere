@@ -39,11 +39,15 @@ export default function Login() {
           <input id="email" name="email" type="email" value={form.email} onChange={handleChange} required />
 
           <label htmlFor="password">Password</label>
-          <input id="password" name="password" type="password" value={form.password} onChange={handleChange} required />
-
+          <input id="password" name="password" type="password" value={form.password} 
+          onChange={handleChange} required />
+<div style={{ textAlign: 'right', marginTop: 8 }}>
+  <Link to="/forgot-password" style={{ fontSize: '.85rem' }}>Forgot password?</Link>
+</div>
           {error && <p className="error">{error}</p>}
 
-          <button className="btn btn-red" style={{ width: '100%', marginTop: 20 }} disabled={loading}>
+          <button className="btn btn-red" style={{ width: '100%', marginTop: 20 }}
+           disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>

@@ -8,6 +8,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ExhibitorApply from './pages/ExhibitorApply';
 import Profile from './pages/Profile';
 import MyRegistrations from './pages/MyRegistrations';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 export default function App() {
   return (
@@ -42,6 +44,9 @@ export default function App() {
     </ProtectedRoute>
   }
 />
+<Route path="/forgot-password" element={<ForgotPassword />} />
+<Route path="/reset-password/:token" element={<ResetPassword />} />
+
 
       </Routes>
 

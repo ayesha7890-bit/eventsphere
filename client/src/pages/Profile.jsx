@@ -10,6 +10,16 @@ const emptyForm = {
   contactPhone: '', address: ''
 };
 
+// Brackets aur quotes hata kar saaf list banata hai
+function cleanList(items) {
+  const text = Array.isArray(items) ? items.join(',') : items || '';
+  return text
+    .replace(/[\[\]"“”]/g, '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export default function Profile() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
@@ -39,7 +49,7 @@ export default function Profile() {
       companyLogo: profile.companyLogo || '',
       companyDescription: profile.companyDescription || '',
       category: profile.category || '',
-      productsServices: (profile.productsServices || []).join(', '),
+      productsServices: cleanList(profile.productsServices).join(', '),
       website: profile.website || '',
       contactPerson: profile.contactPerson || '',
       contactEmail: profile.contactEmail || '',
@@ -58,12 +68,16 @@ export default function Profile() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+
+    const list = cleanList(form.productsServices);
+    if (list.length === 0) {
+      setError('Please add at least one product or service');
+      return;
+    }
+
     setSaving(true);
     try {
-      const res = await api.put('/profile/me', {
-        ...form,
-        productsServices: form.productsServices.split(',').map((s) => s.trim()).filter(Boolean)
-      });
+      const res = await api.put('/profile/me', { ...form, productsServices: list });
       setProfile(res.data);
       setEditing(false);
       setSaved(true);
@@ -75,21 +89,25 @@ export default function Profile() {
   }
 
   if (loading) {
-    return <div className="profile-page"><p style={{ color: 'var(--muted)' }}>Loading...</p></div>;
+    return (
+      <div className="pf-page">
+        <main className="pf-sheet"><p style={{ color: 'var(--muted)' }}>Loading...</p></main>
+      </div>
+    );
   }
 
   /* ---------- Edit mode ---------- */
   if (editing) {
     return (
-      <div className="profile-wrap">
-        <div className="profile-page">
-          <div className="gradient-bar"></div>
-          <h1 className="apply-title">{profile ? 'Edit profile' : 'Create your profile'}</h1>
+      <div className="pf-page">
+        <main className="pf-sheet">
+          <div className="eyebrow">{profile ? 'Edit profile' : 'Create your profile'}</div>
+          <h1 className="pf-title">Tell us about your company</h1>
           <p style={{ color: 'var(--muted)', marginTop: 0 }}>
-            Visitors and organizers will see this information about your company.
+            Visitors and organizers will see this information.
           </p>
 
-          <form className="card profile-form" onSubmit={handleSubmit}>
+          <form className="card pf-form" onSubmit={handleSubmit}>
             <div className="form-grid">
               <div>
                 <label htmlFor="companyName">Company name</label>
@@ -110,7 +128,7 @@ export default function Profile() {
             <label htmlFor="companyDescription">About your company</label>
             <textarea id="companyDescription" name="companyDescription" rows="3" value={form.companyDescription} onChange={handleChange} required />
 
-            <label htmlFor="productsServices">Products or services (commas)</label>
+            <label htmlFor="productsServices">Products or services (separate with commas)</label>
             <input id="productsServices" name="productsServices" value={form.productsServices} onChange={handleChange} placeholder="Web apps, Mobile apps, UI design" required />
 
             <label htmlFor="website">Website (optional)</label>
@@ -148,59 +166,71 @@ export default function Profile() {
               </button>
             </div>
           </form>
-        </div>
+        </main>
       </div>
     );
   }
 
   /* ---------- View mode ---------- */
+  const products = cleanList(profile.productsServices);
+
   return (
-    <div className="profile-wrap">
-      <div className="profile-page">
+    <div className="pf-page">
+      <main className="pf-sheet">
         {saved && <p className="success" style={{ marginTop: 0 }}>Profile saved.</p>}
         {error && <p className="error">{error}</p>}
 
-        <div className="card profile-card">
-          <div className="profile-cover"></div>
-          <div className="profile-body">
-            <div className="profile-top">
-              <div className="avatar">
-                {profile.companyLogo ? (
-                  <img src={profile.companyLogo} alt={profile.companyName + ' logo'} />
-                ) : (
-                  profile.companyName.charAt(0).toUpperCase()
+        <div className="eyebrow">Exhibitor profile</div>
+
+        <div className="pf-cols">
+          <aside className="pf-side">
+            <div className="mono">
+              {profile.companyLogo ? (
+                <img src={profile.companyLogo} alt={profile.companyName + ' logo'} />
+              ) : (
+                profile.companyName.charAt(0).toUpperCase()
+              )}
+            </div>
+            <h1>{profile.companyName}</h1>
+            <span className="pf-cat">{profile.category}</span>
+            <button className="btn btn-ghost" onClick={startEdit}>Edit profile</button>
+          </aside>
+
+          <div>
+            <section className="pf-sec">
+              <h2>About</h2>
+              <p className="pf-about">{profile.companyDescription}</p>
+            </section>
+
+            <section className="pf-sec">
+              <h2>Products and services</h2>
+              <ul className="pf-items">
+                {products.map((p, i) => (
+                  <li key={p + i}>
+                    <i>{String(i + 1).padStart(2, '0')}</i>
+                    {p}
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="pf-sec">
+              <h2>Contact</h2>
+              <dl className="pf-rows">
+                <div><dt>Contact person</dt><dd>{profile.contactPerson}</dd></div>
+                <div><dt>Email</dt><dd>{profile.contactEmail}</dd></div>
+                <div><dt>Phone</dt><dd>{profile.contactPhone}</dd></div>
+                {profile.website && (
+                  <div><dt>Website</dt><dd>{profile.website}</dd></div>
                 )}
-              </div>
-              <div>
-                <span className="kind">{profile.category}</span>
-                <h2>{profile.companyName}</h2>
-              </div>
-              <div className="profile-actions">
-                <button className="btn" onClick={startEdit}>Edit profile</button>
-              </div>
-            </div>
-
-            <h4 className="p-label">About</h4>
-            <p className="p-text">{profile.companyDescription}</p>
-
-            <h4 className="p-label">Products and services</h4>
-            <div className="chips">
-              {(profile.productsServices || []).map((p) => (
-                <span className="chip" key={p}>{p}</span>
-              ))}
-            </div>
-
-            <h4 className="p-label">Contact</h4>
-            <dl className="detail-grid">
-              <div><dt>Contact person</dt><dd>{profile.contactPerson}</dd></div>
-              <div><dt>Email</dt><dd>{profile.contactEmail}</dd></div>
-              <div><dt>Phone</dt><dd>{profile.contactPhone}</dd></div>
-              {profile.website && <div><dt>Website</dt><dd>{profile.website}</dd></div>}
-              {profile.address && <div><dt>Address</dt><dd>{profile.address}</dd></div>}
-            </dl>
+                {profile.address && (
+                  <div><dt>Address</dt><dd>{profile.address}</dd></div>
+                )}
+              </dl>
+            </section>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
