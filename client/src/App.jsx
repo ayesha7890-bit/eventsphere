@@ -10,11 +10,17 @@ import Profile from './pages/Profile';
 import MyRegistrations from './pages/MyRegistrations';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-
+import AdminLayout from './pages/admin/AdminLayout';
+import Dashboard from './pages/admin/Dashboard';
+import ManageExpos from './pages/admin/ManageExpos';
+import Applications from './pages/admin/Applications';
+import Booths from './pages/admin/Booths';
+import Schedule from './pages/admin/Schedule';
 export default function App() {
   return (
     <>
       <Navbar />
+
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/expos" element={<Expos />} />
@@ -28,6 +34,20 @@ export default function App() {
     </ProtectedRoute>
   }
 />
+<Route
+  path="/admin"
+  element={
+    <ProtectedRoute roles={['admin']}>
+      <AdminLayout />
+    </ProtectedRoute>
+  }
+>
+  <Route index element={<Dashboard />} />
+  <Route path="expos" element={<ManageExpos />} />
+  <Route path="applications" element={<Applications />} />
+  <Route path="booths" element={<Booths />} />
+  <Route path="schedule" element={<Schedule />} />
+</Route>
 <Route
   path="/profile"
   element={

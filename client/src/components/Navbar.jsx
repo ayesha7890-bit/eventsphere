@@ -77,7 +77,9 @@ export default function Navbar() {
           <NavLink to="/expos" style={navLinkStyle}>
             Expos
           </NavLink>
-
+{user?.role === 'admin' && (
+  <NavLink to="/admin" style={navLinkStyle}>Admin Panel</NavLink>
+)}
           {user?.role === 'exhibitor' && (
             <>
               <NavLink to="/my-applications" style={navLinkStyle}>

@@ -1,0 +1,72 @@
+const express = require('express')
+const Expo = require('../models/expo');
+const ExhibitorRegistration = require('../models/ExhibitorRegistration');
+const { protect, allowRoles } = require('../middleware/auth');
+
+const router = express.Router();
+
+router.use(protect, allowRoles('admin'));
+// EXPO
+router.put('/expos/:id', async (req, res) => {
+  try {
+    const fields = ['title', 'description', 'theme', 'location', 'startDate', 'endDate', 'banner', 'status'];
+    const updates = {};
+    fields.forEach((f) => {
+      if (req.body[f] !== undefined) updates[f] = req.body[f];
+    });
+    const expo = await Expo.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
+    if (!expo) return res.status(404).json({ message: 'Expo not found' });
+    res.json(expo);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+router.delete('/expos/:id', async (req, res) => {
+  try {
+    const expo = await Expo.findByIdAndDelete(req.params.id);
+    if (!expo) return res.status(404).json({ message: 'Expo not found' });
+    await ExhibitorRegistration.deleteMany({ expo: expo._id });
+    res.json({ message: 'Expo deleted' });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+// EXHIBITORS APPLICATION 
+router.get('/registrations', async (req, res) => {
+  try {
+    const filter = {};
+    if (['pending', 'approved', 'rejected'].includes(req.query.status)) filter.status = req.query.status;
+    if (req.query.expo) filter.expo = req.query.expo;
+    const list = await ExhibitorRegistration.find(filter)
+      .populate('user', 'name email')
+      .populate('expo', 'title')
+      .sort({ createdAt: -1 });
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+router.patch('/registrations/:id/status', async (req, res) => {
+  try {
+    const { status, rejectionReason } = req.body;
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Status must be approved or rejected' });
+    }
+    if (status === 'rejected' && !rejectionReason) {
+      return res.status(400).json({ message: 'Rejection reason is required' });
+    }
+    const reg = await ExhibitorRegistration.findById(req.params.id);
+    if (!reg) return res.status(404).json({ message: 'Registration not found' });
+
+    reg.status = status;
+    reg.rejectionReason = status === 'rejected' ? rejectionReason : undefined;
+    reg.reviewedBy = req.user.id;
+    reg.reviewedAt = new Date();
+    await reg.save();
+    res.json(reg);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+module.exports = router;
