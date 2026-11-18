@@ -2,6 +2,7 @@ const express = require('express')
 const Expo = require('../models/expo');
 const ExhibitorRegistration = require('../models/ExhibitorRegistration');
 const { protect, allowRoles } = require('../middleware/auth');
+const Booth = require('../models/Booth');
 
 const router = express.Router();
 
@@ -64,6 +65,106 @@ router.patch('/registrations/:id/status', async (req, res) => {
     reg.reviewedAt = new Date();
     await reg.save();
     res.json(reg);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// BOOTHS
+
+// 1. Get all booths of selected expo
+router.get('/booths', async (req, res) => {
+  try {
+    const { expo } = req.query;
+
+    if (!expo) {
+      return res.status(400).json({ message: 'Expo ID is required' });
+    }
+
+    const booths = await Booth.find({ expo })
+      .populate('assignedTo', 'companyName')
+      .sort({ code: 1 });
+
+    res.json(booths);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
+// 2. Add multiple booths
+router.post('/booths', async (req, res) => {
+  try {
+    const { expo, codes, size } = req.body;
+
+    if (!expo || !codes) {
+      return res.status(400).json({
+        message: 'Expo and booth codes are required'
+      });
+    }
+
+    const expoExists = await Expo.findById(expo);
+
+    if (!expoExists) {
+      return res.status(404).json({ message: 'Expo not found' });
+    }
+
+    const codeList = codes
+      .split(',')
+      .map(code => code.trim().toUpperCase())
+      .filter(Boolean);
+
+    let created = 0;
+    const skipped = [];
+
+    for (const code of codeList) {
+      const exists = await Booth.findOne({ expo, code });
+
+      if (exists) {
+        skipped.push(code);
+        continue;
+      }
+
+      await Booth.create({
+        expo,
+        code,
+        size: size || 'medium'
+      });
+
+      created++;
+    }
+
+    res.status(201).json({
+      message: 'Booths added successfully',
+      created,
+      skipped
+    });
+
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+
+// 3. Delete free booth
+router.delete('/booths/:id', async (req, res) => {
+  try {
+    const booth = await Booth.findById(req.params.id);
+
+    if (!booth) {
+      return res.status(404).json({ message: 'Booth not found' });
+    }
+
+    if (booth.assignedTo) {
+      return res.status(400).json({
+        message: 'Reserved booth cannot be deleted'
+      });
+    }
+
+    await booth.deleteOne();
+
+    res.json({ message: 'Booth deleted successfully' });
+
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

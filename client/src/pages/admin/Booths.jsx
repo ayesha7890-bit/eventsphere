@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/api';
+import FloorPlan from '../../components/FloorPlan.jsx';
+
 
 export default function Booths() {
   const [expos, setExpos] = useState([]);
@@ -88,17 +90,7 @@ export default function Booths() {
         <button className="btn btn-red" type="submit" style={{ marginTop: 16 }} disabled={!expoId}>Add booths</button>
       </form>
 
-      <div className="booth-grid">
-        {booths.length === 0 && <p style={{ color: 'var(--muted)' }}>No booths for this expo yet.</p>}
-        {booths.map((b) => (
-          <div key={b._id} className={'booth-cell' + (b.assignedTo ? ' taken' : '')}>
-            <b>{b.code}</b>
-            <small>{b.size}</small>
-            <small>{b.assignedTo ? b.assignedTo.companyName : 'Free'}</small>
-            {!b.assignedTo && <button onClick={() => handleDelete(b)}>Delete</button>}
-          </div>
-        ))}
-      </div>
+           <FloorPlan booths={booths} mode="admin" onDelete={handleDelete} />
     </>
   );
 }

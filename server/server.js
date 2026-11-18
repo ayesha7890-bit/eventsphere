@@ -10,7 +10,10 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/expos', require('./routes/expos'));
 app.use('/api/registrations', require('./routes/registrations'));
+app.use('/api/profile', require('./routes/profile'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/exhibitor/booths', require('./routes/exhibitorBooths'));
+app.use('/api/attendee', require('./routes/attendee'));
 
 app.get('/', (req, res) => {
   res.send('EventSphere API is running');

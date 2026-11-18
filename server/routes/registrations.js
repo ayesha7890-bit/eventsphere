@@ -47,11 +47,12 @@ router.post('/', protect, allowRoles('exhibitor'), async (req, res) => {
   }
 });
 
-// Exhibitor apni saari registrations dekhta hai
-router.get('/mine', protect, allowRoles('exhibitor'), async (req, res) => {
+// My Applications ka page ye raasta istemal karta hai
+router.get('/my', protect, allowRoles('exhibitor'), async (req, res) => {
   try {
     const list = await ExhibitorRegistration.find({ user: req.user.id })
       .populate('expo', 'title startDate location')
+      .populate('assignedBooth', 'code size')
       .sort({ createdAt: -1 });
     res.json(list);
   } catch (err) {

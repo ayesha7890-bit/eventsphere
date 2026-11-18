@@ -256,25 +256,26 @@ export default function MyRegistrations() {
                   </div>
                 </div>
 
-                {/* Action Button */}
-                {isApproved ? (
-                  <Link
-                    to={`/expos/${app.expo?._id}/floor-plan`}
-                    className="btn"
-                    style={{
-                      display: 'block',
-                      textAlign: 'center',
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: 8,
-                      fontWeight: 600,
-                      fontSize: '.9rem',
-                      textDecoration: 'none'
-                    }}
-                  >
-                    Select / Manage Booth on Floor Plan
-                  </Link>
-                ) : (
+                
+{/* Action Button */}
+{isApproved ? (
+  <Link
+    to={`/expos/${app.expo?._id}/booth`}
+    className="btn"
+    style={{
+      display: 'block',
+      textAlign: 'center',
+      width: '100%',
+      padding: '10px',
+      borderRadius: 8,
+      fontWeight: 600,
+      fontSize: '.9rem',
+      textDecoration: 'none'
+    }}
+  >
+    Select / Manage Booth on Floor Plan
+  </Link>
+) : (
                   <div
                     style={{
                       textAlign: 'center',

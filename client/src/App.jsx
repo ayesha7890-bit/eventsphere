@@ -16,6 +16,10 @@ import ManageExpos from './pages/admin/ManageExpos';
 import Applications from './pages/admin/Applications';
 import Booths from './pages/admin/Booths';
 import Schedule from './pages/admin/Schedule';
+import ChooseBooth from './pages/ChooseBooth';
+import ExpoDetails from './pages/ExpoDetails';
+import ExhibitorDirectory from './pages/ExhibitorDirectory';
+import MySchedule from './pages/MySchedule';
 export default function App() {
   return (
     <>
@@ -47,6 +51,7 @@ export default function App() {
   <Route path="applications" element={<Applications />} />
   <Route path="booths" element={<Booths />} />
   <Route path="schedule" element={<Schedule />} />
+  
 </Route>
 <Route
   path="/profile"
@@ -57,9 +62,17 @@ export default function App() {
   }
 />
 <Route
+  path="/expos/:expoId/booth"
+  element={
+    <ProtectedRoute roles={['exhibitor']}>
+      <ChooseBooth />
+    </ProtectedRoute>
+  }
+/>
+<Route
   path="/my-applications"
   element={
-    <ProtectedRoute allowedRoles={['exhibitor']}>
+    <ProtectedRoute roles={['exhibitor']}>
       <MyRegistrations />
     </ProtectedRoute>
   }
@@ -68,8 +81,20 @@ export default function App() {
 <Route path="/reset-password/:token" element={<ResetPassword />} />
 
 
-      </Routes>
+
+<Route path="/expos/:id" element={<ExpoDetails />} />
+<Route path="/exhibitors" element={<ExhibitorDirectory />} />
+<Route
+  path="/my-schedule"
+  element={
+    <ProtectedRoute roles={['attendee']}>
+      <MySchedule />
+    </ProtectedRoute>
+  }
+/>
+          </Routes>
 
     </>
+
   );
 }

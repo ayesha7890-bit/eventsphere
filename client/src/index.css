@@ -363,3 +363,80 @@ textarea { resize: vertical; min-height: 64px; }
   background: rgba(124, 58, 237, .10);
 }
 .demo-box small { color: var(--muted); }
+
+/* ===== floor plan ===== */
+
+.fp {
+  background: var(--surf); border: 1px solid var(--line);
+  border-radius: 14px; padding: 20px; margin-top: 24px;
+}
+.fp-stage {
+  text-align: center; font-size: .78rem; font-weight: 600; letter-spacing: .08em;
+  padding: 5px; border-radius: 8px; margin-bottom: 18px;
+  background: linear-gradient(90deg, var(--pur), var(--red));
+}
+.fp-row { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
+.fp-rowname {
+  width: 24px; flex-shrink: 0; padding-top: 24px;
+  text-align: center; color: var(--muted); font-weight: 600;
+}
+.fp-cells { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.fp-cell {
+  width: 92px; min-height: 80px; padding: 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border-radius: 10px; border: 1px solid #3B2F63; background: var(--surf2);
+  color: var(--text); font: inherit; text-align: center;
+}
+.fp-cell.small { width: 76px; }
+.fp-cell.large { width: 128px; }
+.fp-cell b { color: var(--pur-l); font-size: 1rem; }
+.fp-cell small {
+  color: var(--muted); font-size: .72rem; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fp-cell.taken { background: #0E0D15; border-color: #1B1928; }
+.fp-cell.taken b { color: #6B6787; }
+
+button.fp-cell { cursor: pointer; }
+button.fp-cell:hover:not(:disabled) { border-color: var(--pur-l); }
+button.fp-cell:disabled { cursor: not-allowed; }
+.fp-cell[aria-pressed="true"] { background: var(--red); border-color: var(--red); }
+.fp-cell[aria-pressed="true"] b,
+.fp-cell[aria-pressed="true"] small { color: #fff; }
+
+.fp-del {
+  border: 0; background: none; color: #FB7185; cursor: pointer;
+  font-size: .72rem; margin-top: 2px;
+}
+.fp-del:hover { text-decoration: underline; }
+
+.fp-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 16px; color: var(--muted); font-size: .8rem; }
+.fp-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.fp-legend .free { background: var(--surf2); border: 1px solid #3B2F63; }
+.fp-legend .taken { background: #0E0D15; border: 1px solid #1B1928; }
+.fp-legend .pick { background: var(--red); }
+
+.fp-empty { color: var(--muted); margin: 24px 0; }
+.pick-bar {
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  margin-top: 18px; padding: 14px 18px;
+  background: var(--surf); border: 1px solid var(--line); border-radius: 12px;
+}
+/* Purane .hero, .apply-wrap, .pf-page ke background ko clean rakhein taake body ka gradient har page par consistent dikhe */
+.hero,
+.apply-wrap,
+.pf-page {
+  background: transparent;
+}
+
+body {
+  background-color: #09090F;
+  background-image:
+    radial-gradient(ellipse 75% 55% at 85% 0%, rgba(124, 58, 237, 0.34), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 10% 15%, rgba(124, 58, 237, 0.16), transparent 65%),
+    radial-gradient(ellipse 50% 45% at 0% 100%, rgba(225, 29, 72, 0.16), transparent 70%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+}

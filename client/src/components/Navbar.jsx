@@ -91,6 +91,15 @@ export default function Navbar() {
             </>
           )}
         </div>
+        <NavLink to="/exhibitors" style={navLinkStyle}>
+  Exhibitors
+</NavLink>
+
+{user?.role === 'attendee' && (
+  <NavLink to="/my-schedule" style={navLinkStyle}>
+    My Schedule
+  </NavLink>
+)}
 
         {/* User Info & Auth Actions */}
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
