@@ -53,6 +53,25 @@ export default function Expos() {
     Apply as exhibitor
   </Link>
 )}
+<div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+  <Link
+    to={'/expos/' + e._id}
+    className="btn"
+    style={{ alignSelf: 'flex-start' }}
+  >
+    View Details & Schedule
+  </Link>
+
+  {user?.role === 'exhibitor' && e.status !== 'completed' && (
+    <Link
+      to={'/expos/' + e._id + '/apply'}
+      className="btn btn-red"
+      style={{ alignSelf: 'flex-start' }}
+    >
+      Apply as exhibitor
+    </Link>
+  )}
+</div>
           </article>
         ))}
       </div>

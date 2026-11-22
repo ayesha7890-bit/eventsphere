@@ -169,5 +169,47 @@ router.delete('/booths/:id', async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 });
+const Session = require('../models/Session');
+
+// GET all sessions for an expo
+router.get('/sessions', async (req, res) => {
+  try {
+    const filter = req.query.expo ? { expo: req.query.expo } : {};
+    const sessions = await Session.find(filter).sort({ startTime: 1 });
+    res.json(sessions);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST create a session
+router.post('/sessions', async (req, res) => {
+  try {
+    const session = await Session.create(req.body);
+    res.status(201).json(session);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// PUT update a session
+router.put('/sessions/:id', async (req, res) => {
+  try {
+    const session = await Session.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(session);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// DELETE a session
+router.delete('/sessions/:id', async (req, res) => {
+  try {
+    await Session.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Session deleted' });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
 
 module.exports = router;
