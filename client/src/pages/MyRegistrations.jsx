@@ -177,8 +177,8 @@ export default function MyRegistrations() {
                       </h3>
                       <div style={{ fontSize: '.85rem', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span>📍 {app.expo?.location || 'Venue TBA'}</span>
-                        {app.expo?.date && (
-                          <span>• {new Date(app.expo.date).toLocaleDateString()}</span>
+                        {app.expo?.startDate && (
+                          <span>• {new Date(app.expo.startDate).toLocaleDateString()}</span>
                         )}
                       </div>
                     </div>
@@ -243,9 +243,9 @@ export default function MyRegistrations() {
                       <span style={{ display: 'block', fontSize: '.72rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         Assigned Booth
                       </span>
-                      {app.boothNumber ? (
+                      {app.assignedBooth ? (
                         <strong style={{ fontSize: '.95rem', color: '#4ade80' }}>
-                          #{app.boothNumber}
+                          {app.assignedBooth.code}
                         </strong>
                       ) : (
                         <span style={{ fontSize: '.85rem', color: 'var(--muted)', fontStyle: 'italic' }}>

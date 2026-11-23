@@ -1,5 +1,6 @@
 const express = require('express');
 const Expo = require('../models/expo');
+const Session = require('../models/Session');
 const { protect, allowRoles } = require('../middleware/auth');
 
 const router = express.Router();
@@ -20,6 +21,16 @@ router.get('/:id', async (req, res) => {
     const expo = await Expo.findById(req.params.id);
     if (!expo) return res.status(404).json({ message: 'Expo not found' });
     res.json(expo);
+  } catch (err) {
+    res.status(404).json({ message: 'Expo not found' });
+  }
+});
+
+// Ek expo ke sessions (schedule), koi bhi dekh sakta hai
+router.get('/:id/sessions', async (req, res) => {
+  try {
+    const sessions = await Session.find({ expo: req.params.id }).sort({ startTime: 1 });
+    res.json(sessions);
   } catch (err) {
     res.status(404).json({ message: 'Expo not found' });
   }

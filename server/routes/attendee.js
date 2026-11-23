@@ -92,7 +92,8 @@ router.get('/exhibitors', async (req, res) => {
     }
 
     const exhibitors = await ExhibitorRegistration.find(filter)
-      .populate('expo', 'title location date')
+      .populate('expo', 'title location startDate endDate')
+      .populate('assignedBooth', 'code')
       .select('-documents');
 
     res.json(exhibitors);

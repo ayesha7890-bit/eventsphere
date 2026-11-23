@@ -55,7 +55,7 @@ export default function MySchedule() {
                     {item.expo?.title}
                   </h3>
                   <span style={{ fontSize: '.85rem', color: 'var(--muted)' }}>
-                    📍 {item.expo?.location} • 📅 {item.expo?.date ? new Date(item.expo.date).toLocaleDateString() : ''}
+                    📍 {item.expo?.location} • 📅 {item.expo?.startDate ? new Date(item.expo.startDate).toLocaleDateString() : ''}
                   </span>
                 </div>
 

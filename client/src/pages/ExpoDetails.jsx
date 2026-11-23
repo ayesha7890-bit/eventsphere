@@ -3,11 +3,24 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
 
+function fmtSession(s) {
+  const start = new Date(s.startTime).toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+  });
+  const end = new Date(s.endTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return start + ' to ' + end;
+}
+
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export default function ExpoDetails() {
   const { id } = useParams();
   const { user } = useAuth();
   const [expo, setExpo] = useState(null);
   const [exhibitors, setExhibitors] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [isRegistered, setIsRegistered] = useState(false);
   const [bookmarks, setBookmarks] = useState([]);
   const [msg, setMsg] = useState('');
@@ -16,12 +29,14 @@ export default function ExpoDetails() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [expoRes, exRes] = await Promise.all([
+        const [expoRes, exRes, sesRes] = await Promise.all([
           api.get(`/expos/${id}`),
-          api.get(`/attendee/exhibitors?expoId=${id}`)
+          api.get(`/attendee/exhibitors?expoId=${id}`),
+          api.get(`/expos/${id}/sessions`)
         ]);
         setExpo(expoRes.data);
         setExhibitors(exRes.data);
+        setSessions(sesRes.data);
 
         if (user?.role === 'attendee') {
           const myRes = await api.get('/attendee/my-events');
@@ -64,7 +79,7 @@ export default function ExpoDetails() {
   if (loading) return <div className="wrap" style={{ padding: '4rem 0', color: 'var(--muted)' }}>Loading expo details...</div>;
   if (!expo) return <div className="wrap" style={{ padding: '4rem 0', color: 'var(--red)' }}>Expo not found</div>;
 
-  const scheduleList = expo.schedule || [];
+  const scheduleList = sessions;
 
   return (
     <div className="wrap" style={{ padding: '2.5rem 0', maxWidth: 1100, margin: '0 auto' }}>
@@ -126,7 +141,7 @@ export default function ExpoDetails() {
           </p>
           <div style={{ display: 'flex', gap: 20, fontSize: '.9rem', color: 'var(--text)' }}>
             <span>📍 {expo.location}</span>
-            <span>📅 {expo.date ? new Date(expo.date).toLocaleDateString() : 'Date TBA'}</span>
+            <span>📅 {fmtDate(expo.startDate)} to {fmtDate(expo.endDate)}</span>
           </div>
         </div>
 
@@ -178,13 +193,13 @@ export default function ExpoDetails() {
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 14 }}>
-            {scheduleList.map((session, idx) => {
-              const title = session.title || session.topic || `Session ${idx + 1}`;
+            {scheduleList.map((session) => {
+              const title = session.title;
               const isSaved = bookmarks.includes(title);
 
               return (
                 <div
-                  key={idx}
+                  key={session._id}
                   style={{
                     background: '#11111a',
                     border: '1px solid var(--line)',
@@ -199,7 +214,7 @@ export default function ExpoDetails() {
                 >
                   <div>
                     <div style={{ fontSize: '.8rem', color: 'var(--red)', fontWeight: 600, marginBottom: 4 }}>
-                      🕒 {session.time || session.timeSlot || 'Time TBA'} {session.location ? `• 📍 ${session.location}` : ''}
+                      🕒 {fmtSession(session)} {session.room ? `• 📍 ${session.room}` : ''}
                     </div>
                     <h4 style={{ margin: '0 0 4px', fontSize: '1.1rem' }}>{title}</h4>
                     {session.speaker && (
@@ -262,9 +277,9 @@ export default function ExpoDetails() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <strong>{ex.companyName}</strong>
-                  {ex.boothNumber && (
+                  {ex.assignedBooth && (
                     <span style={{ fontSize: '.75rem', color: '#4ade80', fontWeight: 700 }}>
-                      Booth #{ex.boothNumber}
+                      Booth {ex.assignedBooth.code}
                     </span>
                   )}
                 </div>

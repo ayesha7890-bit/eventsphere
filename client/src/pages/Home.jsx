@@ -76,9 +76,9 @@ export default function Home() {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <span className="kind">{ex.category}</span>
-                    {ex.boothNumber && (
+                    {ex.assignedBooth && (
                       <span style={{ fontSize: '.78rem', color: 'var(--ok)', fontWeight: 600 }}>
-                        Booth #{ex.boothNumber}
+                        Booth {ex.assignedBooth.code}
                       </span>
                     )}
                   </div>

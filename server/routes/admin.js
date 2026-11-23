@@ -1,20 +1,29 @@
-const express = require('express')
+const express = require('express');
 const Expo = require('../models/expo');
 const ExhibitorRegistration = require('../models/ExhibitorRegistration');
-const { protect, allowRoles } = require('../middleware/auth');
 const Booth = require('../models/Booth');
+const Session = require('../models/Session');
+const User = require('../models/user');
+const { protect, allowRoles } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Is file ke SAARE routes sirf admin ke liye
 router.use(protect, allowRoles('admin'));
-// EXPO
+
+// Body se sirf allowed fields uthata hai
+function pick(body, fields) {
+  const out = {};
+  fields.forEach((f) => {
+    if (body[f] !== undefined) out[f] = body[f];
+  });
+  return out;
+}
+
+// ================= EXPO =================
 router.put('/expos/:id', async (req, res) => {
   try {
-    const fields = ['title', 'description', 'theme', 'location', 'startDate', 'endDate', 'banner', 'status'];
-    const updates = {};
-    fields.forEach((f) => {
-      if (req.body[f] !== undefined) updates[f] = req.body[f];
-    });
+    const updates = pick(req.body, ['title', 'description', 'theme', 'location', 'startDate', 'endDate', 'banner', 'status']);
     const expo = await Expo.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
     if (!expo) return res.status(404).json({ message: 'Expo not found' });
     res.json(expo);
@@ -22,17 +31,22 @@ router.put('/expos/:id', async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 });
+
 router.delete('/expos/:id', async (req, res) => {
   try {
     const expo = await Expo.findByIdAndDelete(req.params.id);
     if (!expo) return res.status(404).json({ message: 'Expo not found' });
+    // Expo ke saath uska baaqi data bhi saaf
     await ExhibitorRegistration.deleteMany({ expo: expo._id });
+    await Booth.deleteMany({ expo: expo._id });
+    await Session.deleteMany({ expo: expo._id });
     res.json({ message: 'Expo deleted' });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
-// EXHIBITORS APPLICATION 
+
+// ================= EXHIBITOR APPLICATIONS =================
 router.get('/registrations', async (req, res) => {
   try {
     const filter = {};
@@ -41,12 +55,14 @@ router.get('/registrations', async (req, res) => {
     const list = await ExhibitorRegistration.find(filter)
       .populate('user', 'name email')
       .populate('expo', 'title')
+      .populate('assignedBooth', 'code')
       .sort({ createdAt: -1 });
     res.json(list);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 router.patch('/registrations/:id/status', async (req, res) => {
   try {
     const { status, rejectionReason } = req.body;
@@ -59,6 +75,12 @@ router.patch('/registrations/:id/status', async (req, res) => {
     const reg = await ExhibitorRegistration.findById(req.params.id);
     if (!reg) return res.status(404).json({ message: 'Registration not found' });
 
+    // Reject hone par booth wapas khali ho jaye
+    if (status === 'rejected' && reg.assignedBooth) {
+      await Booth.updateOne({ _id: reg.assignedBooth }, { assignedTo: null });
+      reg.assignedBooth = undefined;
+    }
+
     reg.status = status;
     reg.rejectionReason = status === 'rejected' ? rejectionReason : undefined;
     reg.reviewedBy = req.user.id;
@@ -70,145 +92,175 @@ router.patch('/registrations/:id/status', async (req, res) => {
   }
 });
 
-// BOOTHS
-
-// 1. Get all booths of selected expo
+// ================= BOOTHS =================
 router.get('/booths', async (req, res) => {
   try {
-    const { expo } = req.query;
-
-    if (!expo) {
-      return res.status(400).json({ message: 'Expo ID is required' });
-    }
-
-    const booths = await Booth.find({ expo })
-      .populate('assignedTo', 'companyName')
-      .sort({ code: 1 });
-
+    const filter = req.query.expo ? { expo: req.query.expo } : {};
+    const booths = await Booth.find(filter).populate('assignedTo', 'companyName').sort({ code: 1 });
     res.json(booths);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-
-// 2. Add multiple booths
+// Ek saath kai booth: codes = "A1, A2, A3"
 router.post('/booths', async (req, res) => {
   try {
     const { expo, codes, size } = req.body;
-
-    if (!expo || !codes) {
-      return res.status(400).json({
-        message: 'Expo and booth codes are required'
-      });
+    const list = [...new Set(String(codes || '').split(',').map((c) => c.trim().toUpperCase()).filter(Boolean))];
+    if (!expo || list.length === 0) {
+      return res.status(400).json({ message: 'Expo and booth codes are required' });
     }
-
-    const expoExists = await Expo.findById(expo);
-
-    if (!expoExists) {
+    if (!(await Expo.exists({ _id: expo }))) {
       return res.status(404).json({ message: 'Expo not found' });
     }
-
-    const codeList = codes
-      .split(',')
-      .map(code => code.trim().toUpperCase())
-      .filter(Boolean);
-
-    let created = 0;
-    const skipped = [];
-
-    for (const code of codeList) {
-      const exists = await Booth.findOne({ expo, code });
-
-      if (exists) {
-        skipped.push(code);
-        continue;
-      }
-
-      await Booth.create({
-        expo,
-        code,
-        size: size || 'medium'
-      });
-
-      created++;
+    const existing = await Booth.find({ expo, code: { $in: list } }).distinct('code');
+    const fresh = list.filter((c) => !existing.includes(c));
+    if (fresh.length > 0) {
+      await Booth.insertMany(fresh.map((code) => ({ expo, code, size })));
     }
-
-    res.status(201).json({
-      message: 'Booths added successfully',
-      created,
-      skipped
-    });
-
+    res.status(201).json({ created: fresh.length, skipped: existing });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-
-// 3. Delete free booth
 router.delete('/booths/:id', async (req, res) => {
   try {
     const booth = await Booth.findById(req.params.id);
-
-    if (!booth) {
-      return res.status(404).json({ message: 'Booth not found' });
-    }
-
+    if (!booth) return res.status(404).json({ message: 'Booth not found' });
     if (booth.assignedTo) {
-      return res.status(400).json({
-        message: 'Reserved booth cannot be deleted'
-      });
+      return res.status(400).json({ message: 'Booth is assigned. Unassign it first' });
     }
-
     await booth.deleteOne();
-
-    res.json({ message: 'Booth deleted successfully' });
-
+    res.json({ message: 'Booth deleted' });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
-const Session = require('../models/Session');
 
-// GET all sessions for an expo
+// Booth assign / badlo / hatao (boothId null = unassign)
+router.patch('/registrations/:id/booth', async (req, res) => {
+  try {
+    const { boothId } = req.body;
+    const reg = await ExhibitorRegistration.findById(req.params.id);
+    if (!reg) return res.status(404).json({ message: 'Registration not found' });
+    if (reg.status !== 'approved') {
+      return res.status(400).json({ message: 'Approve the application before assigning a booth' });
+    }
+    if (boothId && String(reg.assignedBooth) === String(boothId)) {
+      return res.json(reg);
+    }
+
+    // Pehle naya booth claim karo (sirf agar usi expo ka ho aur khali ho)
+    let booth = null;
+    if (boothId) {
+      booth = await Booth.findOneAndUpdate(
+        { _id: boothId, expo: reg.expo, assignedTo: null },
+        { assignedTo: reg._id },
+        { new: true }
+      );
+      if (!booth) return res.status(400).json({ message: 'Booth is not available' });
+    }
+    // Phir purana booth khali karo
+    if (reg.assignedBooth) {
+      await Booth.updateOne({ _id: reg.assignedBooth }, { assignedTo: null });
+    }
+    reg.assignedBooth = booth ? booth._id : undefined;
+    await reg.save();
+    res.json(reg);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// ================= SCHEDULE =================
+const sessionFields = ['expo', 'title', 'speaker', 'description', 'room', 'startTime', 'endTime'];
+
 router.get('/sessions', async (req, res) => {
   try {
     const filter = req.query.expo ? { expo: req.query.expo } : {};
     const sessions = await Session.find(filter).sort({ startTime: 1 });
     res.json(sessions);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// POST create a session
 router.post('/sessions', async (req, res) => {
   try {
-    const session = await Session.create(req.body);
+    const data = pick(req.body, sessionFields);
+    if (new Date(data.endTime) <= new Date(data.startTime)) {
+      return res.status(400).json({ message: 'End time must be after start time' });
+    }
+    const session = await Session.create(data);
     res.status(201).json(session);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// PUT update a session
 router.put('/sessions/:id', async (req, res) => {
   try {
-    const session = await Session.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const data = pick(req.body, sessionFields);
+    if (data.startTime && data.endTime && new Date(data.endTime) <= new Date(data.startTime)) {
+      return res.status(400).json({ message: 'End time must be after start time' });
+    }
+    const session = await Session.findByIdAndUpdate(req.params.id, data, { new: true, runValidators: true });
+    if (!session) return res.status(404).json({ message: 'Session not found' });
     res.json(session);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// DELETE a session
 router.delete('/sessions/:id', async (req, res) => {
   try {
-    await Session.findByIdAndDelete(req.params.id);
+    const session = await Session.findByIdAndDelete(req.params.id);
+    if (!session) return res.status(404).json({ message: 'Session not found' });
     res.json({ message: 'Session deleted' });
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+});
+
+// ================= REPORTS =================
+router.get('/reports', async (req, res) => {
+  try {
+    const [expos, exhibitors, attendees, sessions, booths, assignedBooths, byStatus, perExpo] = await Promise.all([
+      Expo.countDocuments(),
+      User.countDocuments({ role: 'exhibitor' }),
+      User.countDocuments({ role: 'attendee' }),
+      Session.countDocuments(),
+      Booth.countDocuments(),
+      Booth.countDocuments({ assignedTo: { $ne: null } }),
+      ExhibitorRegistration.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+      ExhibitorRegistration.aggregate([
+        {
+          $group: {
+            _id: '$expo',
+            total: { $sum: 1 },
+            approved: { $sum: { $cond: [{ $eq: ['$status', 'approved'] }, 1, 0] } }
+          }
+        },
+        { $lookup: { from: 'expos', localField: '_id', foreignField: '_id', as: 'expo' } },
+        { $unwind: '$expo' },
+        { $project: { _id: 0, title: '$expo.title', total: 1, approved: 1 } }
+      ])
+    ]);
+
+    const registrations = { pending: 0, approved: 0, rejected: 0 };
+    byStatus.forEach((s) => {
+      registrations[s._id] = s.count;
+    });
+
+    res.json({
+      totals: { expos, exhibitors, attendees, sessions, booths, assignedBooths },
+      registrations,
+      perExpo
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

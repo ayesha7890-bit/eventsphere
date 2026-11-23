@@ -129,12 +129,12 @@ export default function ExhibitorDirectory() {
                       borderRadius: 20,
                       fontSize: '.75rem',
                       fontWeight: 700,
-                      background: ex.boothNumber ? 'rgba(74, 222, 128, 0.12)' : 'rgba(255,255,255,0.06)',
-                      color: ex.boothNumber ? '#4ade80' : 'var(--muted)',
-                      border: ex.boothNumber ? '1px solid rgba(74, 222, 128, 0.35)' : '1px solid var(--line)'
+                      background: ex.assignedBooth ? 'rgba(74, 222, 128, 0.12)' : 'rgba(255,255,255,0.06)',
+                      color: ex.assignedBooth ? '#4ade80' : 'var(--muted)',
+                      border: ex.assignedBooth ? '1px solid rgba(74, 222, 128, 0.35)' : '1px solid var(--line)'
                     }}
                   >
-                    {ex.boothNumber ? `Booth #${ex.boothNumber}` : 'Booth TBA'}
+                    {ex.assignedBooth ? `Booth ${ex.assignedBooth.code}` : 'Booth TBA'}
                   </span>
                 </div>
 
