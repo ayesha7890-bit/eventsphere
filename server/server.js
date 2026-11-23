@@ -14,6 +14,7 @@ app.use('/api/profile', require('./routes/profile'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/exhibitor/booths', require('./routes/exhibitorBooths'));
 app.use('/api/attendee', require('./routes/attendee'));
+app.use('/api/messages', require('./routes/messages'));
 
 app.get('/', (req, res) => {
   res.send('EventSphere API is running');

@@ -1,11 +1,40 @@
 import { useEffect, useState } from 'react';
 import api from '../api/api';
+import { useAuth } from '../context/AuthContext';
+
+
+
+function cleanTags(rawList) {
+  if (!Array.isArray(rawList)) return [];
+  return rawList
+    .flatMap((item) => {
+      if (typeof item === 'string' && item.trim().startsWith('[')) {
+        try {
+          return JSON.parse(item);
+        } catch {
+          return item;
+        }
+      }
+      return item;
+    })
+    .map((s) => String(s).replace(/^["'\[\]]+|["'\[\]]+$/g, '').trim())
+    .filter(Boolean);
+}
 
 export default function ExhibitorDirectory() {
   const [exhibitors, setExhibitors] = useState([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+
+  // Inquiry Modal ke states
+  const [activeEx, setActiveEx] = useState(null);
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [feedback, setFeedback] = useState('');
 
   const categories = ['All', 'Technology', 'Fashion', 'Healthcare', 'Education', 'Finance', 'Food & Beverage', 'Other'];
 
@@ -19,179 +48,185 @@ export default function ExhibitorDirectory() {
           setLoading(false);
         })
         .catch(() => setLoading(false));
-    }, 300);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [search, category]);
 
+  async function handleSendInquiry(e) {
+    e.preventDefault();
+    setSending(true);
+    setFeedback('');
+    try {
+      await api.post('/messages', {
+        exhibitorId: activeEx._id,
+        subject,
+        message
+      });
+      setFeedback('Inquiry sent! Exhibitor will reply in your Messages tab.');
+      setSubject('');
+      setMessage('');
+      setTimeout(() => {
+        setActiveEx(null);
+        setFeedback('');
+      }, 1400);
+    } catch (err) {
+      setFeedback(err.response?.data?.message || 'Could not send inquiry. Please login first.');
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
-    <div className="wrap" style={{ padding: '2.5rem 0', maxWidth: 1100, margin: '0 auto' }}>
-      <div style={{ marginBottom: '2rem', borderBottom: '1px solid var(--line)', paddingBottom: '1.25rem' }}>
-        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', margin: '0 0 6px' }}>
-          Exhibitor Directory
-        </h1>
-        <p style={{ color: 'var(--muted)', margin: 0, fontSize: '.92rem' }}>
-          Search exhibitors by company name, products, or category and locate their booths
+    <div className="dir-page">
+      <div className="dir-hero">
+        <h1 className="dir-title">Exhibitor Directory</h1>
+        <p className="dir-subtitle">
+          Discover innovative companies, explore their products, and locate their booths on the floor.
         </p>
       </div>
 
-      {/* Search & Filter Controls */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 14,
-          flexWrap: 'wrap',
-          marginBottom: '2rem',
-          background: '#11111a',
-          padding: '1rem',
-          borderRadius: 12,
-          border: '1px solid var(--line)'
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Search company, products, or services..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            flex: 1,
-            minWidth: 240,
-            padding: '10px 14px',
-            borderRadius: 8,
-            border: '1px solid var(--line)',
-            background: '#09090F',
-            color: 'var(--text)'
-          }}
-        />
+      {/* Search & Category Pills */}
+      <div className="dir-controls">
+        <div className="dir-search-wrap">
+          <span className="dir-search-icon">🔍</span>
+          <input
+            type="text"
+            className="dir-search-input"
+            placeholder="Search by company name, product, or service..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          style={{
-            padding: '10px 16px',
-            borderRadius: 8,
-            border: '1px solid var(--line)',
-            background: '#09090F',
-            color: 'var(--text)',
-            minWidth: 180
-          }}
-        >
+        <div className="dir-pills">
           {categories.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
+            <button
+              type="button"
+              key={cat}
+              className={`dir-pill ${category === cat ? 'active' : ''}`}
+              onClick={() => setCategory(cat)}
+            >
+              {cat}
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
       {/* Results Grid */}
       {loading ? (
-        <div style={{ color: 'var(--muted)', textAlign: 'center', padding: '3rem 0' }}>Searching exhibitors...</div>
+        <div className="dir-empty">Searching exhibitors...</div>
       ) : exhibitors.length === 0 ? (
-        <div
-          style={{
-            border: '1px solid var(--line)',
-            borderRadius: 12,
-            padding: '3rem',
-            textAlign: 'center',
-            color: 'var(--muted)'
-          }}
-        >
+        <div className="dir-empty">
           Koi exhibitor nahi mila. Doosra keyword ya category try karein.
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: '1.5rem' }}>
-          {exhibitors.map((ex) => (
-            <div
-              key={ex._id}
-              style={{
-                background: 'linear-gradient(160deg, #12121c 0%, #0b0b12 100%)',
-                border: '1px solid var(--line)',
-                borderRadius: 14,
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between'
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-                  <div>
-                    <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', margin: '0 0 4px' }}>
-                      {ex.companyName}
-                    </h3>
-                    <span style={{ fontSize: '.78rem', color: 'var(--red)', fontWeight: 600 }}>
-                      {ex.category}
+        <div className="dir-grid">
+          {exhibitors.map((ex, idx) => {
+            const tags = cleanTags(ex.productsServices);
+            const initial = (ex.companyName || 'E').charAt(0).toUpperCase();
+
+            return (
+              <div
+                key={ex._id}
+                className="dir-card"
+                style={{ animationDelay: `${idx * 60}ms` }}
+              >
+                <div>
+                  <div className="dir-card-head">
+                    <div className="dir-brand">
+                      <div className="dir-avatar">{initial}</div>
+                      <div>
+                        <h3 className="dir-company">{ex.companyName}</h3>
+                        <span className="dir-cat">{ex.category}</span>
+                      </div>
+                    </div>
+
+                    <span className={`dir-booth-badge ${ex.assignedBooth ? 'assigned' : ''}`}>
+                      {ex.assignedBooth ? `Booth ${ex.assignedBooth.code}` : 'Booth TBA'}
                     </span>
                   </div>
 
-                  <span
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: 20,
-                      fontSize: '.75rem',
-                      fontWeight: 700,
-                      background: ex.assignedBooth ? 'rgba(74, 222, 128, 0.12)' : 'rgba(255,255,255,0.06)',
-                      color: ex.assignedBooth ? '#4ade80' : 'var(--muted)',
-                      border: ex.assignedBooth ? '1px solid rgba(74, 222, 128, 0.35)' : '1px solid var(--line)'
-                    }}
-                  >
-                    {ex.assignedBooth ? `Booth ${ex.assignedBooth.code}` : 'Booth TBA'}
-                  </span>
+                  <p className="dir-desc">
+                    {ex.companyDescription || 'No company overview provided yet.'}
+                  </p>
+
+                  {tags.length > 0 && (
+                    <div>
+                      <span className="dir-tags-label">PRODUCTS & SERVICES</span>
+                      <div className="dir-tags">
+                        {tags.map((item, i) => (
+                          <span key={i} className="dir-tag">
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <p style={{ fontSize: '.88rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 14 }}>
-                  {ex.companyDescription || 'No description provided.'}
-                </p>
-
-                {ex.productsServices?.length > 0 && (
-                  <div style={{ marginBottom: 14 }}>
-                    <span style={{ fontSize: '.75rem', color: 'var(--muted)', display: 'block', marginBottom: 6 }}>
-                      PRODUCTS & SERVICES
-                    </span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {ex.productsServices.map((item, i) => (
-                        <span
-                          key={i}
-                          style={{
-                            fontSize: '.75rem',
-                            padding: '3px 9px',
-                            borderRadius: 6,
-                            background: 'rgba(255,255,255,0.05)',
-                            border: '1px solid rgba(255,255,255,0.08)'
-                          }}
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div className="dir-card-foot">
+                  <span>🎪 {ex.expo?.title || 'Expo'}</span>
+                  {user && String(ex.user?._id || ex.user) === String(user.id || user._id) ? (
+                    <span className="dir-booth-badge assigned">Your Booth</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-red"
+                      onClick={() => {
+                        setFeedback('');
+                        setActiveEx(ex);
+                      }}
+                    >
+                      Send Inquiry
+                    </button>
+                  )}
+                </div>
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              <div
-                style={{
-                  borderTop: '1px solid rgba(255,255,255,0.06)',
-                  paddingTop: 12,
-                  marginTop: 8,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: '.82rem',
-                  color: 'var(--muted)'
-                }}
+      {/* In-App Inquiry Modal */}
+      {activeEx && (
+        <div className="modal-backdrop" onClick={() => setActiveEx(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <div>
+                <h3>Message {activeEx.companyName}</h3>
+                <span className="dir-cat">{activeEx.category}</span>
+              </div>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setActiveEx(null)}
               >
-                <span>🎪 {ex.expo?.title || 'Expo'}</span>
-                {ex.contactEmail && (
-                  <a
-                    href={`mailto:${ex.contactEmail}?subject=Inquiry via EventSphere`}
-                    className="btn"
-                    style={{ padding: '6px 12px', fontSize: '.8rem', borderRadius: 6, textDecoration: 'none' }}
-                  >
-                    Contact Exhibitor
-                  </a>
-                )}
-              </div>
+                ✕
+              </button>
             </div>
-          ))}
+
+            {feedback && <p className="success">{feedback}</p>}
+
+            <form className="modal-form" onSubmit={handleSendInquiry}>
+              <input
+                type="text"
+                placeholder="Subject (e.g. Product Pricing / Booth Meeting)"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                required
+              />
+              <textarea
+                placeholder="Write your question or inquiry here..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                required
+              />
+              <button type="submit" className="btn btn-red" disabled={sending}>
+                {sending ? 'Sending...' : 'Send Inquiry'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

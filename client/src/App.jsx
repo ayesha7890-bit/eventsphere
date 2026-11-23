@@ -20,6 +20,8 @@ import ChooseBooth from './pages/ChooseBooth';
 import ExpoDetails from './pages/ExpoDetails';
 import ExhibitorDirectory from './pages/ExhibitorDirectory';
 import MySchedule from './pages/MySchedule';
+import Messages from './pages/Messages';
+
 export default function App() {
   return (
     <>
@@ -30,6 +32,7 @@ export default function App() {
         <Route path="/expos" element={<Expos />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/messages" element={<Messages />} />
         <Route
   path="/expos/:id/apply"
   element={
