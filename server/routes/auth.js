@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/user');
 
 const router = express.Router();
@@ -74,6 +75,59 @@ router.post('/login', async (req, res) => {
       token,
       user: { id: user._id, name: user.name, email: user.email, role: user.role }
     });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+// Forgot password: reset link banata hai
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const email = String(req.body.email || '').toLowerCase().trim();
+    const reply = { message: 'If this email is registered, a reset link has been created.' };
+    const user = await User.findOne({ email });
+    if (!user) return res.json(reply);
+
+    const token = crypto.randomBytes(32).toString('hex');
+    user.resetToken = hashToken(token); // database mein sirf hash save hota hai
+    user.resetTokenExpire = new Date(Date.now() + 15 * 60 * 1000);
+    await user.save();
+
+    // Email service nahi hai, to link sirf development mein seedha response mein aata hai.
+    // Production mein ye link email (nodemailer) se bhejna hoga.
+    if (process.env.NODE_ENV !== 'production') {
+      const base = process.env.CLIENT_URL || 'http://localhost:5173';
+      reply.resetLink = base + '/reset-password/' + token;
+    }
+    res.json(reply);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Reset password: naya password set karta hai
+router.post('/reset-password/:token', async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+    const user = await User.findOne({
+      resetToken: hashToken(req.params.token),
+      resetTokenExpire: { $gt: new Date() }
+    });
+    if (!user) {
+      return res.status(400).json({ message: 'Reset link is invalid or expired' });
+    }
+    user.password = await bcrypt.hash(password, 10);
+    user.resetToken = undefined;
+    user.resetTokenExpire = undefined;
+    await user.save();
+    res.json({ message: 'Password updated. You can log in now.' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }

@@ -44,7 +44,7 @@ export default function MyRegistrations() {
 
   if (loading) {
     return (
-      <div className="wrap" style={{ padding: '4rem 0', textAlign: 'center', color: 'var(--muted)' }}>
+      <div className="wrap" style={{ padding: '4rem 20px', textAlign: 'center', color: 'var(--muted)' }}>
         Loading your applications...
       </div>
     );
@@ -52,14 +52,14 @@ export default function MyRegistrations() {
 
   if (error) {
     return (
-      <div className="wrap" style={{ padding: '4rem 0', textAlign: 'center', color: 'var(--red)' }}>
+      <div className="wrap" style={{ padding: '4rem 20px', textAlign: 'center', color: 'var(--red)' }}>
         {error}
       </div>
     );
   }
 
   return (
-    <div className="wrap" style={{ padding: '2.5rem 0', maxWidth: 1100, margin: '0 auto' }}>
+    <div className="wrap" style={{ padding: '2.5rem 20px', maxWidth: 1100, margin: '0 auto' }}>
       {/* Header Section */}
       <div
         style={{
@@ -128,7 +128,7 @@ export default function MyRegistrations() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(340px, 100%), 1fr))',
             gap: '1.5rem'
           }}
         >

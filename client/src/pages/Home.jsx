@@ -16,10 +16,16 @@ export default function Home() {
       .catch(() => {});
   }, []);
 
-  function handleFeedbackSubmit(e) {
+  async function handleFeedbackSubmit(e) {
     e.preventDefault();
-    setFbSent('Thank you! Your feedback has been submitted to the EventSphere team.');
-    setFeedback({ name: '', email: '', message: '' });
+    setFbSent('');
+    try {
+      await api.post('/feedback', feedback);
+      setFbSent('Thank you! Your feedback has been submitted to the EventSphere team.');
+      setFeedback({ name: '', email: '', message: '' });
+    } catch (err) {
+      setFbSent(err.response?.data?.message || 'Could not send feedback. Please try again.');
+    }
   }
 
   return (
@@ -134,7 +140,7 @@ export default function Home() {
           className="card"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
             gap: 32,
             alignItems: 'center',
             boxShadow: '0 0 60px rgba(124, 58, 237, 0.12)'
@@ -149,7 +155,7 @@ export default function Home() {
           </div>
 
           <form onSubmit={handleFeedbackSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px, 100%), 1fr))', gap: 12 }}>
               <input
                 type="text"
                 placeholder="Your Name"

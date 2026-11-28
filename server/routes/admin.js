@@ -4,6 +4,7 @@ const ExhibitorRegistration = require('../models/ExhibitorRegistration');
 const Booth = require('../models/Booth');
 const Session = require('../models/Session');
 const User = require('../models/user');
+const Feedback = require('../models/Feedback');
 const { protect, allowRoles } = require('../middleware/auth');
 
 const router = express.Router();
@@ -261,6 +262,27 @@ router.get('/reports', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ================= FEEDBACK =================
+router.get('/feedback', async (req, res) => {
+  try {
+    res.json(await Feedback.find().sort({ createdAt: -1 }));
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.patch('/feedback/:id/resolve', async (req, res) => {
+  try {
+    const item = await Feedback.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Feedback not found' });
+    item.resolved = !item.resolved;
+    await item.save();
+    res.json(item);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 

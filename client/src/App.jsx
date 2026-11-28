@@ -16,6 +16,7 @@ import ManageExpos from './pages/admin/ManageExpos';
 import Applications from './pages/admin/Applications';
 import Booths from './pages/admin/Booths';
 import Schedule from './pages/admin/Schedule';
+import AdminFeedback from './pages/admin/Feedback';
 import ChooseBooth from './pages/ChooseBooth';
 import ExpoDetails from './pages/ExpoDetails';
 import ExhibitorDirectory from './pages/ExhibitorDirectory';
@@ -54,6 +55,7 @@ export default function App() {
   <Route path="applications" element={<Applications />} />
   <Route path="booths" element={<Booths />} />
   <Route path="schedule" element={<Schedule />} />
+  <Route path="feedback" element={<AdminFeedback />} />
   
 </Route>
 <Route

@@ -15,10 +15,10 @@ export default function MySchedule() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="wrap" style={{ padding: '4rem 0', color: 'var(--muted)' }}>Loading your schedule...</div>;
+  if (loading) return <div className="wrap" style={{ padding: '4rem 20px', color: 'var(--muted)' }}>Loading your schedule...</div>;
 
   return (
-    <div className="wrap" style={{ padding: '2.5rem 0', maxWidth: 1100, margin: '0 auto' }}>
+    <div className="wrap" style={{ padding: '2.5rem 20px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ marginBottom: '2rem', borderBottom: '1px solid var(--line)', paddingBottom: '1.25rem' }}>
         <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', margin: '0 0 6px' }}>
           My Events & Bookmarked Sessions

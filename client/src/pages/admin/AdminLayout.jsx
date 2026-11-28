@@ -6,7 +6,8 @@ const links = [
   { to: '/admin/expos', label: 'Expos' },
   { to: '/admin/applications', label: 'Applications' },
   { to: '/admin/booths', label: 'Booths' },
-  { to: '/admin/schedule', label: 'Schedule' }
+  { to: '/admin/schedule', label: 'Schedule' },
+  { to: '/admin/feedback', label: 'Feedback' }
 ];
 
 export default function AdminLayout() {
